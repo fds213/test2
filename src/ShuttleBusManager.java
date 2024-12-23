@@ -8,27 +8,25 @@ import java.util.List;
  * 청주대 셔틀버스 좌석 예약 프로그램입니다.
  *
  * @author fds213 (junwon12352@naver.com)
- * @version 2.1
- *
+ * @version 2.2
  * @created 2024-12-17
- * @lastModified 2024-12-23
- *
- * @changelog
- * <ul>
- *     <li>2024-12-17: 최초 생성 (fds213)</li>
- *     <li>2024-12-23: scanner로 입출력하는 방식에서 gui 버전으로 수정</li>
+ * @lastModified 2024-12-24
+ * @changelog <ul>
+ * <li>2024-12-17: 최초 생성 (fds213)</li>
+ * <li>2024-12-23: scanner로 입출력하는 방식에서 gui 버전으로 수정</li>
  * </ul>
  */
 public class ShuttleBusManager {
     private static final String FILE_PATH = "Students.txt";
-    private static final int TOTAL_SEATS = 10;
-    private static final Map<Integer, String> reservations = new HashMap<>();
+    private static final int TOTAL_SEATS = 45;
+    private static final Map<Integer, String[]> reservations = new HashMap<>();
     private static final Map<String, List<String>> schedule = new HashMap<>();
 
     private static JTextArea textArea;
     private static JComboBox<String> scheduleComboBox;
     private static JTextField seatNumberField;
     private static JTextField passengerNameField;
+    private static JComboBox<String> timeComboBox;
 
     static {
         schedule.put("생활관-정문", Arrays.asList(
@@ -53,8 +51,8 @@ public class ShuttleBusManager {
 
     public static void saveReservationsToFile() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
-            for (Map.Entry<Integer, String> entry : reservations.entrySet()) {
-                writer.write(entry.getKey() + "," + entry.getValue());
+            for (Map.Entry<Integer, String[]> entry : reservations.entrySet()) {
+                writer.write(entry.getKey() + "," + entry.getValue()[0] + "," + entry.getValue()[1]);
                 writer.newLine();
             }
             JOptionPane.showMessageDialog(null, "예약 정보가 파일에 저장되었습니다.");
@@ -70,20 +68,21 @@ public class ShuttleBusManager {
                 String[] parts = line.split(",");
                 int seatNumber = Integer.parseInt(parts[0]);
                 String passenger = parts[1];
-                reservations.put(seatNumber, passenger);
+                String time = parts[2];
+                reservations.put(seatNumber, new String[]{passenger, time});
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(null, "파일 읽기 중 오류 발생: " + e.getMessage());
         }
     }
 
-    public static void reserveSeat(int seatNumber, String passenger) {
+    public static void reserveSeat(int seatNumber, String passenger, String time) {
         if (reservations.containsKey(seatNumber)) {
             JOptionPane.showMessageDialog(null, "이미 예약된 좌석입니다.");
         } else if (seatNumber < 1 || seatNumber > TOTAL_SEATS) {
             JOptionPane.showMessageDialog(null, "잘못된 좌석 번호입니다.");
         } else {
-            reservations.put(seatNumber, passenger);
+            reservations.put(seatNumber, new String[]{passenger, time});
             JOptionPane.showMessageDialog(null, "좌석 " + seatNumber + "이(가) " + passenger + "님께 예약되었습니다.");
             updateReservationsDisplay();
         }
@@ -103,7 +102,8 @@ public class ShuttleBusManager {
         StringBuilder sb = new StringBuilder();
         for (int i = 1; i <= TOTAL_SEATS; i++) {
             if (reservations.containsKey(i)) {
-                sb.append("좌석 ").append(i).append(": ").append(reservations.get(i)).append("\n");
+                String[] reservation = reservations.get(i);
+                sb.append("좌석 ").append(i).append(": ").append(reservation[0]).append(" (시간: ").append(reservation[1]).append(")\n");
             } else {
                 sb.append("좌석 ").append(i).append(": 비어 있음\n");
             }
@@ -120,7 +120,33 @@ public class ShuttleBusManager {
                 sb.append(time).append("\n");
             }
             textArea.setText(sb.toString());
+
+            timeComboBox.removeAllItems();
+            for (String time : times) {
+                timeComboBox.addItem(time);
+            }
         }
+    }
+
+    public static void viewReservationsByTime(String time) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("선택한 시간(").append(time).append(")의 예약 정보:\n");
+        boolean found = false;
+
+        for (Map.Entry<Integer, String[]> entry : reservations.entrySet()) {
+            int seatNumber = entry.getKey();
+            String[] reservation = entry.getValue();
+            if (reservation[1].equals(time)) {
+                sb.append("좌석 ").append(seatNumber).append(": ").append(reservation[0]).append("\n");
+                found = true;
+            }
+        }
+
+        if (!found) {
+            sb.append("선택한 시간에 예약된 좌석이 없습니다.");
+        }
+
+        JOptionPane.showMessageDialog(null, sb.toString());
     }
 
     public static void main(String[] args) {
@@ -137,7 +163,7 @@ public class ShuttleBusManager {
         frame.add(scrollPane, BorderLayout.CENTER);
 
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(3, 2));
+        panel.setLayout(new GridLayout(4, 2));
 
         panel.add(new JLabel("노선 선택:"));
         scheduleComboBox = new JComboBox<>(schedule.keySet().toArray(new String[0]));
@@ -146,6 +172,10 @@ public class ShuttleBusManager {
             updateScheduleDisplay(selectedRoute);
         });
         panel.add(scheduleComboBox);
+
+        panel.add(new JLabel("시간 선택:"));
+        timeComboBox = new JComboBox<>();
+        panel.add(timeComboBox);
 
         panel.add(new JLabel("좌석 번호:"));
         seatNumberField = new JTextField();
@@ -165,7 +195,8 @@ public class ShuttleBusManager {
             try {
                 int seatNumber = Integer.parseInt(seatNumberField.getText());
                 String passenger = passengerNameField.getText();
-                reserveSeat(seatNumber, passenger);
+                String time = (String) timeComboBox.getSelectedItem();
+                reserveSeat(seatNumber, passenger, time);
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "좌석 번호는 숫자로 입력해야 합니다.");
             }
@@ -181,6 +212,7 @@ public class ShuttleBusManager {
             }
         });
 
+
         JButton saveButton = new JButton("저장");
         saveButton.addActionListener(e -> saveReservationsToFile());
 
@@ -191,5 +223,6 @@ public class ShuttleBusManager {
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
         frame.setVisible(true);
+
     }
 }
