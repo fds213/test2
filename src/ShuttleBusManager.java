@@ -2,12 +2,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
+import java.util.List;
 
 /**
  * 청주대 셔틀버스 좌석 예약 프로그램의 GUI 버전입니다.
  *
  * @author fds213 (junwon12352@naver.com)
- * @version 2.0
+ * @version 2.1
  *
  * @created 2024-12-17
  * @lastModified 2024-12-23
@@ -22,10 +23,33 @@ public class ShuttleBusManager {
     private static final String FILE_PATH = "Students.txt";
     private static final int TOTAL_SEATS = 10;
     private static final Map<Integer, String> reservations = new HashMap<>();
+    private static final Map<String, List<String>> schedule = new HashMap<>();
 
     private static JTextArea textArea;
+    private static JComboBox<String> scheduleComboBox;
     private static JTextField seatNumberField;
     private static JTextField passengerNameField;
+
+    static {
+        schedule.put("생활관-정문", Arrays.asList(
+                "8:10 학교버스 2", "8:20 학교버스 1", "8:30 학교버스 2", "8:40 학교버스 1", "8:50 학교버스 2",
+                "9:00 학교버스 1", "9:10 학교버스 2", "9:20 미래로관광", "9:30 학교버스 1", "9:40 학교버스 2",
+                "9:50 학교버스 1", "10:00 학교버스 2", "10:10 학교버스 1", "10:30 학교버스 2", "10:50 학교버스 1",
+                "11:10 학교버스 2", "11:20 학교버스 1", "11:40 학교버스 2", "12:40 미래로관광", "12:50 학교버스 1",
+                "13:00 학교버스 2", "13:20 학교버스 1", "13:40 학교버스 2", "14:20 학교버스 1", "14:40 학교버스 2",
+                "15:20 학교버스 1", "15:40 학교버스 2", "16:20 학교버스 1", "16:40 학교버스 2", "17:20 학교버스 1",
+                "17:40 학교버스 2", "17:50 학교버스 1"
+        ));
+        schedule.put("정문-생활관", Arrays.asList(
+                "8:10 학교버스 1", "8:20 학교버스 2", "8:30 학교버스 1", "8:40 학교버스 2", "8:50 학교버스 1",
+                "9:00 학교버스 2", "9:10 학교버스 1", "9:20 학교버스 2", "9:30 미래로관광", "9:40 학교버스 1",
+                "9:50 학교버스 2", "10:00 학교버스 1", "10:10 학교버스 2", "10:30 학교버스 1", "10:50 학교버스 2",
+                "11:10 학교버스 1", "11:20 학교버스 2", "11:40 학교버스 1", "12:20 미래로관광", "12:50 학교버스 2",
+                "13:00 학교버스 1", "13:20 학교버스 2", "13:40 학교버스 1", "14:20 학교버스 2", "14:40 학교버스 1",
+                "15:20 학교버스 2", "15:40 학교버스 1", "16:20 학교버스 2", "16:40 학교버스 1", "17:20 학교버스 2",
+                "17:40 학교버스 1"
+        ));
+    }
 
     public static void saveReservationsToFile() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
@@ -87,12 +111,24 @@ public class ShuttleBusManager {
         textArea.setText(sb.toString());
     }
 
+    public static void updateScheduleDisplay(String route) {
+        List<String> times = schedule.get(route);
+        if (times != null) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(route).append(" 시간표:\n");
+            for (String time : times) {
+                sb.append(time).append("\n");
+            }
+            textArea.setText(sb.toString());
+        }
+    }
+
     public static void main(String[] args) {
         loadReservationsFromFile();
 
         JFrame frame = new JFrame("청주대 셔틀버스 좌석 예약");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 400);
+        frame.setSize(500, 500);
         frame.setLayout(new BorderLayout());
 
         textArea = new JTextArea();
@@ -102,6 +138,14 @@ public class ShuttleBusManager {
 
         JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(3, 2));
+
+        panel.add(new JLabel("노선 선택:"));
+        scheduleComboBox = new JComboBox<>(schedule.keySet().toArray(new String[0]));
+        scheduleComboBox.addActionListener(e -> {
+            String selectedRoute = (String) scheduleComboBox.getSelectedItem();
+            updateScheduleDisplay(selectedRoute);
+        });
+        panel.add(scheduleComboBox);
 
         panel.add(new JLabel("좌석 번호:"));
         seatNumberField = new JTextField();
@@ -127,9 +171,6 @@ public class ShuttleBusManager {
             }
         });
 
-        JButton viewButton = new JButton("예약 조회");
-        viewButton.addActionListener(e -> updateReservationsDisplay());
-
         JButton cancelButton = new JButton("예약 취소");
         cancelButton.addActionListener(e -> {
             try {
@@ -144,7 +185,6 @@ public class ShuttleBusManager {
         saveButton.addActionListener(e -> saveReservationsToFile());
 
         buttonPanel.add(reserveButton);
-        buttonPanel.add(viewButton);
         buttonPanel.add(cancelButton);
         buttonPanel.add(saveButton);
 
