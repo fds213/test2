@@ -5,7 +5,7 @@ import java.util.*;
 import java.util.List;
 
 /**
- * 청주대 셔틀버스 좌석 예약 프로그램의 GUI 버전입니다.
+ * 청주대 셔틀버스 좌석 예약 프로그램입니다.
  *
  * @author fds213 (junwon12352@naver.com)
  * @version 2.1
