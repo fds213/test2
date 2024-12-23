@@ -32,6 +32,7 @@ public class ShuttleBusManager {
     private static JTextField seatNumberField;
     private static JTextField passengerNameField;
     private static JComboBox<String> timeComboBox;
+    private static JTextField studentIdField;
 
     static {
         schedule.put("생활관-정문", Arrays.asList(
@@ -96,7 +97,7 @@ public class ShuttleBusManager {
     }
 
 
-    public static void reserveSeat(int seatNumber, String passenger, String route, String time) {
+    public static void reserveSeat(int seatNumber, String passenger, String studentId, String route, String time) {
         reservations.putIfAbsent(route, new HashMap<>());
         reservations.get(route).putIfAbsent(time, new HashMap<>());
 
@@ -107,9 +108,10 @@ public class ShuttleBusManager {
         } else if (seatNumber < 1 || seatNumber > TOTAL_SEATS) {
             JOptionPane.showMessageDialog(null, "잘못된 좌석 번호입니다.");
         } else {
-            seats.put(seatNumber, passenger);
+            String reservationInfo = passenger + " (학번: " + studentId + ")";
+            seats.put(seatNumber, reservationInfo);
             saveReservationsToFile();
-            JOptionPane.showMessageDialog(null, "좌석 " + seatNumber + "이(가) " + passenger + "님께 예약되었습니다.");
+            JOptionPane.showMessageDialog(null, "좌석 " + seatNumber + "이(가) " + reservationInfo + "님께 예약되었습니다.");
             updateReservationsDisplay(route, time);
         }
     }
@@ -207,7 +209,7 @@ public class ShuttleBusManager {
         frame.add(scrollPane, BorderLayout.CENTER);
 
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(4, 2));
+        panel.setLayout(new GridLayout(5, 2));
 
         panel.add(new JLabel("노선 선택:"));
         scheduleComboBox = new JComboBox<>(schedule.keySet().toArray(new String[0]));
@@ -229,6 +231,10 @@ public class ShuttleBusManager {
         passengerNameField = new JTextField();
         panel.add(passengerNameField);
 
+        panel.add(new JLabel("학번:"));
+        studentIdField = new JTextField();
+        panel.add(studentIdField);
+
         frame.add(panel, BorderLayout.NORTH);
 
         JPanel buttonPanel = new JPanel();
@@ -239,12 +245,13 @@ public class ShuttleBusManager {
             try {
                 int seatNumber = Integer.parseInt(seatNumberField.getText());
                 String passenger = passengerNameField.getText();
+                String studentId = studentIdField.getText();
                 String time = (String) timeComboBox.getSelectedItem();
                 String route = (String) scheduleComboBox.getSelectedItem();
-                if (route != null && time != null && !route.isEmpty() && !time.isEmpty()) {
-                    reserveSeat(seatNumber, passenger, route, time);
+                if (route != null && time != null && !route.isEmpty() && !time.isEmpty() && !studentId.isEmpty()) {
+                    reserveSeat(seatNumber, passenger, studentId, route, time);
                 } else {
-                    JOptionPane.showMessageDialog(null, "노선과 시간을 모두 선택해주세요.");
+                    JOptionPane.showMessageDialog(null, "모든 필드를 정확히 입력해주세요.");
                 }
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "좌석 번호는 숫자로 입력해야 합니다.");
@@ -266,6 +273,7 @@ public class ShuttleBusManager {
                 JOptionPane.showMessageDialog(null, "좌석 번호는 숫자로 입력해야 합니다.");
             }
         });
+
         JButton viewButton = new JButton("예약 조회");
         viewButton.addActionListener(e -> {
             String selectedTime = (String) timeComboBox.getSelectedItem();
@@ -284,6 +292,5 @@ public class ShuttleBusManager {
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
         frame.setVisible(true);
-
     }
 }
