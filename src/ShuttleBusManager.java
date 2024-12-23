@@ -14,6 +14,7 @@ import java.util.List;
  * @changelog <ul>
  * <li>2024-12-17: 최초 생성 (fds213)</li>
  * <li>2024-12-23: scanner로 입출력하는 방식에서 gui 버전으로 수정</li>
+ * <li>2024-12-24: 시간별 예약 조회기능 추가</li>
  * </ul>
  */
 public class ShuttleBusManager {
@@ -211,7 +212,15 @@ public class ShuttleBusManager {
                 JOptionPane.showMessageDialog(null, "좌석 번호는 숫자로 입력해야 합니다.");
             }
         });
-
+        JButton viewButton = new JButton("예약 조회");
+        viewButton.addActionListener(e -> {
+            String selectedTime = (String) timeComboBox.getSelectedItem();
+            if (selectedTime != null && !selectedTime.isEmpty()) {
+                viewReservationsByTime(selectedTime);
+            } else {
+                JOptionPane.showMessageDialog(null, "시간을 선택해주세요.");
+            }
+        });
 
         JButton saveButton = new JButton("저장");
         saveButton.addActionListener(e -> saveReservationsToFile());
@@ -219,6 +228,7 @@ public class ShuttleBusManager {
         buttonPanel.add(reserveButton);
         buttonPanel.add(cancelButton);
         buttonPanel.add(saveButton);
+        buttonPanel.add(viewButton);
 
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
