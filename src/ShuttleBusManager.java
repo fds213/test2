@@ -12,7 +12,7 @@ import java.util.List;
  * 청주대 셔틀버스 좌석 예약 프로그램입니다.
  *
  * @author fds213 (junwon12352@naver.com)
- * @version 2.2
+ * @version 2.3
  * @created 2024-12-17
  * @lastModified 2024-12-24
  * @changelog <ul>
@@ -74,7 +74,6 @@ public class ShuttleBusManager {
         }
     }
 
-
     public static void loadReservationsFromFile() {
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_PATH))) {
             String line;
@@ -96,8 +95,7 @@ public class ShuttleBusManager {
         }
     }
 
-
-    public static void reserveSeat(int seatNumber, String passenger, String studentId, String route, String time) {
+    public static void reserveSeat(int seatNumber, String passenger, String route, String time, String studentId) {
         reservations.putIfAbsent(route, new HashMap<>());
         reservations.get(route).putIfAbsent(time, new HashMap<>());
 
@@ -108,14 +106,12 @@ public class ShuttleBusManager {
         } else if (seatNumber < 1 || seatNumber > TOTAL_SEATS) {
             JOptionPane.showMessageDialog(null, "잘못된 좌석 번호입니다.");
         } else {
-            String reservationInfo = passenger + " (학번: " + studentId + ")";
-            seats.put(seatNumber, reservationInfo);
+            seats.put(seatNumber, passenger + " (" + studentId + ")");
             saveReservationsToFile();
-            JOptionPane.showMessageDialog(null, "좌석 " + seatNumber + "이(가) " + reservationInfo + "님께 예약되었습니다.");
+            JOptionPane.showMessageDialog(null, seatNumber + "번 좌석이 " + passenger + "님(" + studentId + ")으로 예약되었습니다.");
             updateReservationsDisplay(route, time);
         }
     }
-
 
     public static void cancelReservation(int seatNumber, String route, String time) {
         if (reservations.containsKey(seatNumber)) {
@@ -145,55 +141,43 @@ public class ShuttleBusManager {
     }
 
     public static void updateScheduleDisplay(String route) {
-        List<String> times = schedule.get(route);
-        if (times != null) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(route).append(" 시간표:\n");
-            for (String time : times) {
-                sb.append(time).append("\n");
-            }
-            textArea.setText(sb.toString());
-
-            timeComboBox.removeAllItems();
-            for (String time : times) {
+        timeComboBox.removeAllItems();
+        if (route != null && !route.isEmpty()) {
+            for (String time : schedule.get(route)) {
                 timeComboBox.addItem(time);
             }
         }
     }
 
-    public static void viewReservationsByTime(String route, String time) {
-        JTextPane textPane = new JTextPane();
-        StyledDocument doc = textPane.getStyledDocument();
+    public static Map<Integer, String> getReservationsForTime(String route, String time) {
+        Map<Integer, String> reservationsForTime = new HashMap<>();
+        Map<Integer, String> seats = reservations.getOrDefault(route, Collections.emptyMap())
+                .getOrDefault(time, Collections.emptyMap());
 
-        Style defaultStyle = textPane.addStyle("default", null);
-        StyleConstants.setForeground(defaultStyle, Color.BLACK);
-
-        Style reservedStyle = textPane.addStyle("reserved", null);
-        StyleConstants.setForeground(reservedStyle, Color.GRAY);
-
-        try {
-            doc.insertString(doc.getLength(), "노선: " + route + ", 시간: " + time + "의 좌석 예약 정보:\n", defaultStyle);
-
-            Map<Integer, String> seats = reservations.getOrDefault(route, Collections.emptyMap())
-                    .getOrDefault(time, Collections.emptyMap());
-
-            for (int i = 1; i <= TOTAL_SEATS; i++) {
-                if (seats.containsKey(i)) {
-                    doc.insertString(doc.getLength(),
-                            "좌석 " + i + ": " + seats.get(i) + "\n", reservedStyle);
-                } else {
-                    doc.insertString(doc.getLength(),
-                            "좌석 " + i + ": 비어 있음\n", defaultStyle);
-                }
-            }
-        } catch (BadLocationException e) {
-            e.printStackTrace();
+        for (Map.Entry<Integer, String> entry : seats.entrySet()) {
+            reservationsForTime.put(entry.getKey(), entry.getValue());
         }
 
-        JScrollPane scrollPane = new JScrollPane(textPane);
-        scrollPane.setPreferredSize(new Dimension(400, 300));
-        JOptionPane.showMessageDialog(null, scrollPane, "시간별 예약 조회", JOptionPane.INFORMATION_MESSAGE);
+        return reservationsForTime;
     }
+
+
+    public static void viewReservationsByTime(String route, String time) {
+        StringBuilder reservationsInfo = new StringBuilder("예약 내역 (" + route + " - " + time + "):\n");
+
+        Map<Integer, String> seats = getReservationsForTime(route, time);
+        if (seats.isEmpty()) {
+            reservationsInfo.append("예약된 좌석이 없습니다.");
+        } else {
+            for (Map.Entry<Integer, String> entry : seats.entrySet()) {
+                reservationsInfo.append("좌석 " + entry.getKey() + ": " + entry.getValue() + "\n");
+            }
+        }
+
+
+        textArea.setText(reservationsInfo.toString());
+    }
+
 
     public static void main(String[] args) {
         loadReservationsFromFile();
@@ -221,6 +205,13 @@ public class ShuttleBusManager {
 
         panel.add(new JLabel("시간 선택:"));
         timeComboBox = new JComboBox<>();
+        timeComboBox.addActionListener(e -> {
+            String selectedTime = (String) timeComboBox.getSelectedItem();
+            String selectedRoute = (String) scheduleComboBox.getSelectedItem();
+            if (selectedTime != null && selectedRoute != null && !selectedTime.isEmpty() && !selectedRoute.isEmpty()) {
+                viewReservationsByTime(selectedRoute, selectedTime);
+            }
+        });
         panel.add(timeComboBox);
 
         panel.add(new JLabel("좌석 번호:"));
@@ -248,10 +239,10 @@ public class ShuttleBusManager {
                 String studentId = studentIdField.getText();
                 String time = (String) timeComboBox.getSelectedItem();
                 String route = (String) scheduleComboBox.getSelectedItem();
-                if (route != null && time != null && !route.isEmpty() && !time.isEmpty() && !studentId.isEmpty()) {
-                    reserveSeat(seatNumber, passenger, studentId, route, time);
+                if (route != null && time != null && !route.isEmpty() && !time.isEmpty()) {
+                    reserveSeat(seatNumber, passenger, route, time, studentId);
                 } else {
-                    JOptionPane.showMessageDialog(null, "모든 필드를 정확히 입력해주세요.");
+                    JOptionPane.showMessageDialog(null, "노선과 시간을 모두 선택해주세요.");
                 }
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "좌석 번호는 숫자로 입력해야 합니다.");
@@ -274,21 +265,8 @@ public class ShuttleBusManager {
             }
         });
 
-        JButton viewButton = new JButton("예약 조회");
-        viewButton.addActionListener(e -> {
-            String selectedTime = (String) timeComboBox.getSelectedItem();
-            String selectedRoute = (String) scheduleComboBox.getSelectedItem();
-            if (selectedTime != null && !selectedTime.isEmpty() && selectedRoute != null && !selectedRoute.isEmpty()) {
-                viewReservationsByTime(selectedRoute, selectedTime);
-            } else {
-                JOptionPane.showMessageDialog(null, "시간과 노선을 모두 선택해주세요.");
-            }
-        });
-
         buttonPanel.add(reserveButton);
         buttonPanel.add(cancelButton);
-        buttonPanel.add(viewButton);
-
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
         frame.setVisible(true);
