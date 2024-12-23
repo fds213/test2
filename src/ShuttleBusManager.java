@@ -1,4 +1,8 @@
 import javax.swing.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
@@ -11,7 +15,8 @@ import java.util.List;
  * @version 2.2
  * @created 2024-12-17
  * @lastModified 2024-12-24
- * @changelog <ul>
+ * @changelog
+ * <ul>
  * <li>2024-12-17: 최초 생성 (fds213)</li>
  * <li>2024-12-23: scanner로 입출력하는 방식에서 gui 버전으로 수정</li>
  * <li>2024-12-24: 시간별 예약 조회기능 추가</li>
@@ -130,24 +135,33 @@ public class ShuttleBusManager {
     }
 
     public static void viewReservationsByTime(String time) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("선택한 시간(").append(time).append(")의 예약 정보:\n");
-        boolean found = false;
+        JTextPane textPane = new JTextPane();
+        StyledDocument doc = textPane.getStyledDocument();
 
-        for (Map.Entry<Integer, String[]> entry : reservations.entrySet()) {
-            int seatNumber = entry.getKey();
-            String[] reservation = entry.getValue();
-            if (reservation[1].equals(time)) {
-                sb.append("좌석 ").append(seatNumber).append(": ").append(reservation[0]).append("\n");
-                found = true;
+        Style defaultStyle = textPane.addStyle("default", null);
+        StyleConstants.setForeground(defaultStyle, Color.BLACK);
+
+        Style reservedStyle = textPane.addStyle("reserved", null);
+        StyleConstants.setForeground(reservedStyle, Color.GRAY);
+
+        try {
+            doc.insertString(doc.getLength(), "선택한 시간(" + time + ")의 좌석별 예약 정보:\n", defaultStyle);
+
+            for (int i = 1; i <= TOTAL_SEATS; i++) {
+                if (reservations.containsKey(i) && reservations.get(i)[1].equals(time)) {
+                    doc.insertString(doc.getLength(),
+                            "좌석 " + i + ": " + reservations.get(i)[0] + "\n", reservedStyle);
+                } else {
+                    doc.insertString(doc.getLength(),
+                            "좌석 " + i + ": 비어 있음\n", defaultStyle);
+                }
             }
+        } catch (BadLocationException e) {
+            e.printStackTrace();
         }
-
-        if (!found) {
-            sb.append("선택한 시간에 예약된 좌석이 없습니다.");
-        }
-
-        JOptionPane.showMessageDialog(null, sb.toString());
+        JScrollPane scrollPane = new JScrollPane(textPane);
+        scrollPane.setPreferredSize(new Dimension(400, 300));
+        JOptionPane.showMessageDialog(null, scrollPane, "시간별 예약 조회", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public static void main(String[] args) {
@@ -221,6 +235,7 @@ public class ShuttleBusManager {
                 JOptionPane.showMessageDialog(null, "시간을 선택해주세요.");
             }
         });
+
 
         JButton saveButton = new JButton("저장");
         saveButton.addActionListener(e -> saveReservationsToFile());
