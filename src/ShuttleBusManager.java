@@ -4,7 +4,6 @@ import java.util.*;
 public class ShuttleBusManager {
     private static final String FILE_PATH = "Students.txt";
 
-    // 학생 정보를 파일에 저장
     public static void saveStudentsToFile(List<String> students) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
             for (String student : students) {
@@ -17,7 +16,6 @@ public class ShuttleBusManager {
         }
     }
 
-    // 파일에서 학생 정보를 읽음
     public static List<String> readStudentsFromFile() {
         List<String> students = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_PATH))) {
@@ -32,7 +30,6 @@ public class ShuttleBusManager {
         return students;
     }
 
-    // 사용자 입력으로 학생 추가
     public static void addStudentFromInput(List<String> students) {
         Scanner scanner = new Scanner(System.in);
 
@@ -50,16 +47,10 @@ public class ShuttleBusManager {
     }
 
     public static void main(String[] args) {
-        // 초기화된 학생 리스트
         List<String> studentList = new ArrayList<>();
-
-        // 사용자 입력으로 학생 추가
         addStudentFromInput(studentList);
-
-        // 추가된 학생 정보를 파일에 저장
         saveStudentsToFile(studentList);
 
-        // 저장된 학생 정보를 불러와 출력
         List<String> loadedStudents = readStudentsFromFile();
         System.out.println("현재 저장된 학생 정보:");
         for (String student : loadedStudents) {
