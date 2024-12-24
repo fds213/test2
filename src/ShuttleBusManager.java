@@ -1,8 +1,4 @@
 import javax.swing.*;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Style;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
@@ -12,13 +8,14 @@ import java.util.List;
  * 청주대 셔틀버스 좌석 예약 프로그램입니다.
  *
  * @author fds213 (junwon12352@naver.com)
- * @version 2.3
+ * @version 2.4
  * @created 2024-12-17
- * @lastModified 2024-12-24
+ * @lastModified 2024-12-25
  * @changelog <ul>
  * <li>2024-12-17: 최초 생성 (fds213)</li>
  * <li>2024-12-23: scanner로 입출력하는 방식에서 gui 버전으로 수정</li>
  * <li>2024-12-24: 시간별 예약 조회기능 추가</li>
+ * <li>2024-12-25: 예약 취소 버튼 개선</li>
  * </ul>
  */
 public class ShuttleBusManager {
@@ -113,14 +110,24 @@ public class ShuttleBusManager {
         }
     }
 
-    public static void cancelReservation(int seatNumber, String route, String time) {
-        if (reservations.containsKey(seatNumber)) {
-            reservations.remove(seatNumber);
-            JOptionPane.showMessageDialog(null, "좌석 " + seatNumber + " 예약이 취소되었습니다.");
-            updateReservationsDisplay(route, time);
-            saveReservationsToFile();
-        } else {
-            JOptionPane.showMessageDialog(null, "취소할 예약이 존재하지 않습니다.");
+    public static void cancelReservation(String studentId, String passengerName, String route, String time) {
+        Map<Integer, String> seats = reservations.getOrDefault(route, Collections.emptyMap())
+                .getOrDefault(time, Collections.emptyMap());
+
+        boolean found = false;
+        for (Map.Entry<Integer, String> entry : seats.entrySet()) {
+            if (entry.getValue().equals(passengerName + " (" + studentId + ")")) {
+                seats.remove(entry.getKey());
+                found = true;
+                saveReservationsToFile();
+                JOptionPane.showMessageDialog(null, "예약이 취소되었습니다. 좌석 번호: " + entry.getKey());
+                updateReservationsDisplay(route, time);
+                break;
+            }
+        }
+
+        if (!found) {
+            JOptionPane.showMessageDialog(null, "입력한 정보와 일치하는 예약이 없습니다.");
         }
     }
 
@@ -251,19 +258,36 @@ public class ShuttleBusManager {
 
         JButton cancelButton = new JButton("예약 취소");
         cancelButton.addActionListener(e -> {
-            try {
-                int seatNumber = Integer.parseInt(seatNumberField.getText());
-                String route = (String) scheduleComboBox.getSelectedItem();
-                String time = (String) timeComboBox.getSelectedItem();
-                if (route != null && time != null && !route.isEmpty() && !time.isEmpty()) {
-                    cancelReservation(seatNumber, route, time);
-                } else {
-                    JOptionPane.showMessageDialog(null, "노선과 시간을 모두 선택해주세요.");
+            String route = (String) scheduleComboBox.getSelectedItem();
+            String time = (String) timeComboBox.getSelectedItem();
+
+            if (route != null && time != null && !route.isEmpty() && !time.isEmpty()) {
+                JTextField studentIdField = new JTextField();
+                JTextField passengerNameField = new JTextField();
+                Object[] message = {
+                        "학번:", studentIdField,
+                        "이름:", passengerNameField
+                };
+
+                int option = JOptionPane.showConfirmDialog(null, message,"예약 취소",
+                        JOptionPane.OK_CANCEL_OPTION,
+                        JOptionPane.PLAIN_MESSAGE
+                );
+                if (option == JOptionPane.OK_OPTION) {
+                    String studentId = studentIdField.getText();
+                    String passengerName = passengerNameField.getText();
+
+                    if (!studentId.isEmpty() && !passengerName.isEmpty()) {
+                        cancelReservation(studentId, passengerName, route, time);
+                    } else {
+                        JOptionPane.showMessageDialog(null, "학번과 이름을 모두 입력해주세요.");
+                    }
                 }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(null, "좌석 번호는 숫자로 입력해야 합니다.");
+            } else {
+                JOptionPane.showMessageDialog(null, "노선과 시간을 모두 선택해주세요.");
             }
         });
+
 
         buttonPanel.add(reserveButton);
         buttonPanel.add(cancelButton);
