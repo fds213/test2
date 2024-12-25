@@ -11,18 +11,20 @@ import java.util.List;
  * @version 2.5
  * @created 2024-12-17
  * @lastModified 2024-12-25
- * @changelog <ul>
+ * @changelog
+ * <ul>
  * <li>2024-12-17: 최초 생성 (fds213)</li>
  * <li>2024-12-23: scanner로 입출력하는 방식에서 gui 버전으로 수정</li>
  * <li>2024-12-24: 시간별 예약 조회기능 추가</li>
  * <li>2024-12-25: 예약 취소 버튼, 남은 좌석표시 개선</li>
  * </ul>
  */
+
 public class ShuttleBusManager {
-    private static final String FILE_PATH = "Students.txt";
-    private static final int TOTAL_SEATS = 45;
-    private static final Map<String, Map<String, Map<Integer, String>>> reservations = new HashMap<>();
-    private static final Map<String, List<String>> schedule = new HashMap<>();
+    private static final String FILE_PATH = "Students.txt"; // 예약 정보를 저장할 파일 경로
+    private static final int TOTAL_SEATS = 45;  // 총 좌석 수
+    private static final Map<String, Map<String, Map<Integer, String>>> reservations = new HashMap<>(); // 예약 정보를 저장할 맵
+    private static final Map<String, List<String>> schedule = new HashMap<>(); // 셔틀버스의 노선과 시간을 저장하는 맵
 
     private static JTextArea textArea;
     private static JComboBox<String> scheduleComboBox;
@@ -30,6 +32,14 @@ public class ShuttleBusManager {
     private static JTextField passengerNameField;
     private static JComboBox<String> timeComboBox;
     private static JTextField studentIdField;
+
+    /**
+     * 프로그램 시작 시 예약 데이터를 파일에서 읽어오는 메소드입니다.
+     * <p>
+     * 파일에 저장된 예약 데이터를 읽어와 메모리에 로드합니다. 파일 형식에 맞춰 데이터를 파싱하고,
+     * 예약 정보를 예약 맵에 저장합니다.
+     * </p>
+     */
 
     static {
         schedule.put("생활관-정문", Arrays.asList(
@@ -52,6 +62,14 @@ public class ShuttleBusManager {
         ));
     }
 
+    /**
+     * 예약 정보를 파일에 저장합니다.
+     * <p>
+     * 현재까지 저장된 모든 예약 정보를 파일에 저장합니다. 각 예약은 노선, 시간, 좌석 번호,
+     * 예약자 이름과 학번을 포함합니다.
+     * </p>
+     */
+
     public static void saveReservationsToFile() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
             for (Map.Entry<String, Map<String, Map<Integer, String>>> routeEntry : reservations.entrySet()) {
@@ -70,6 +88,14 @@ public class ShuttleBusManager {
             JOptionPane.showMessageDialog(null, "파일 저장 중 오류 발생: " + e.getMessage());
         }
     }
+
+    /**
+     * 예약 정보를 파일에서 로드합니다.
+     * <p>
+     * 예약 정보를 파일에서 읽어와 예약 맵에 저장합니다. 파일에 저장된 예약 데이터를 기반으로
+     * 좌석 예약을 관리합니다.
+     * </p>
+     */
 
     public static void loadReservationsFromFile() {
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_PATH))) {
@@ -92,6 +118,20 @@ public class ShuttleBusManager {
         }
     }
 
+    /**
+     * 좌석을 예약합니다.
+     * <p>
+     * 주어진 시간, 노선, 좌석 번호에 대해 예약을 수행합니다. 예약이 성공적으로 이루어지면
+     * 예약 정보를 파일에 저장하고, 예약 현황을 화면에 표시합니다.
+     * </p>
+     *
+     * @param seatNumber 예약할 좌석 번호
+     * @param passenger 예약자의 이름
+     * @param route 예약할 노선
+     * @param time 예약할 시간
+     * @param studentId 예약자의 학번
+     */
+
     public static void reserveSeat(int seatNumber, String passenger, String route, String time, String studentId) {
         reservations.putIfAbsent(route, new HashMap<>());
         reservations.get(route).putIfAbsent(time, new HashMap<>());
@@ -109,6 +149,19 @@ public class ShuttleBusManager {
             updateReservationsDisplay(route, time);
         }
     }
+
+    /**
+     * 예약을 취소합니다.
+     * <p>
+     * 주어진 학번과 이름에 맞는 예약을 찾아 취소합니다. 예약 취소가 완료되면 파일에 저장되고,
+     * 화면에 예약 현황이 갱신됩니다.
+     * </p>
+     *
+     * @param studentId 예약자의 학번
+     * @param passengerName 예약자의 이름
+     * @param route 예약된 노선
+     * @param time 예약된 시간
+     */
 
     public static void cancelReservation(String studentId, String passengerName, String route, String time) {
         Map<Integer, String> seats = reservations.getOrDefault(route, Collections.emptyMap())
@@ -131,6 +184,12 @@ public class ShuttleBusManager {
         }
     }
 
+    /**
+     * 예약 현황을 갱신하여 화면에 표시합니다.
+     * @param route 예약할 노선
+     * @param time 예약할 시간
+     */
+
     public static void updateReservationsDisplay(String route, String time) {
         StringBuilder sb = new StringBuilder();
 
@@ -151,6 +210,12 @@ public class ShuttleBusManager {
         textArea.setCaretPosition(0);
     }
 
+    /**
+     * 스케줄을 업데이트합니다.
+     * 선택된 노선에 대한 시간 정보를 갱신합니다.
+     * @param route 예약할 노선
+     */
+
     public static void updateScheduleDisplay(String route) {
         timeComboBox.removeAllItems();
         if (route != null && !route.isEmpty()) {
@@ -160,47 +225,46 @@ public class ShuttleBusManager {
         }
     }
 
-    public static Map<Integer, String> getReservationsForTime(String route, String time) {
-        Map<Integer, String> reservationsForTime = new HashMap<>();
-        Map<Integer, String> seats = reservations.getOrDefault(route, Collections.emptyMap())
-                .getOrDefault(time, Collections.emptyMap());
-
-        for (Map.Entry<Integer, String> entry : seats.entrySet()) {
-            reservationsForTime.put(entry.getKey(), entry.getValue());
-        }
-
-        return reservationsForTime;
-    }
+    /**
+     * 프로그램을 실행하는 main 메소드입니다.
+     * GUI를 설정하고 예약 및 취소 기능을 처리합니다.
+     * @param args 실행 인자
+     */
 
     public static void main(String[] args) {
-        loadReservationsFromFile();
+        loadReservationsFromFile(); // 파일에서 기존 예약 정보를 로드
 
+        // 프레임 설정: 창 제목 및 크기 설정
         JFrame frame = new JFrame("청주대 셔틀버스 좌석 예약");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(500, 500);
         frame.setLayout(new BorderLayout());
 
+        // 예약 정보 표시를 위한 텍스트 영역 설정
         textArea = new JTextArea();
-        textArea.setEditable(false);
+        textArea.setEditable(false);    // 사용자가 수정할 수 없도록 설정
         JScrollPane scrollPane = new JScrollPane(textArea);
         frame.add(scrollPane, BorderLayout.CENTER);
 
+        // 예약 관련 입력 폼 설정
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(5, 2));
+        panel.setLayout(new GridLayout(5, 2));  // 5행 2열의 그리드 레이아웃
 
+        // 노선 선택 레이블 및 콤보박스
         panel.add(new JLabel("노선 선택:"));
         scheduleComboBox = new JComboBox<>(schedule.keySet().toArray(new String[0]));
         scheduleComboBox.addActionListener(e -> {
             String selectedRoute = (String) scheduleComboBox.getSelectedItem();
-            updateScheduleDisplay(selectedRoute);
+            updateScheduleDisplay(selectedRoute);  // 선택한 노선에 따른 시간 목록 업데이트
 
             String selectedTime = (String) timeComboBox.getSelectedItem();
             if (selectedRoute != null && selectedTime != null) {
-                updateReservationsDisplay(selectedRoute, selectedTime);
+                updateReservationsDisplay(selectedRoute, selectedTime); // 예약 현황 업데이트
             }
         });
         panel.add(scheduleComboBox);
 
+        // 시간 선택 레이블 및 콤보박스
         panel.add(new JLabel("시간 선택:"));
         timeComboBox = new JComboBox<>();
         timeComboBox.addActionListener(e -> {
@@ -208,38 +272,53 @@ public class ShuttleBusManager {
             String selectedRoute = (String) scheduleComboBox.getSelectedItem();
 
             if (selectedRoute != null && selectedTime != null) {
-                updateReservationsDisplay(selectedRoute, selectedTime);
+                updateReservationsDisplay(selectedRoute, selectedTime); // 시간에 맞는 예약 현황 업데이트
             }
         });
         panel.add(timeComboBox);
 
+        // 좌석 번호 입력 필드
         panel.add(new JLabel("좌석 번호:"));
         seatNumberField = new JTextField();
         panel.add(seatNumberField);
 
-        panel.add(new JLabel("예약자 이름:"));
+        // 이름 입력 필드
+        panel.add(new JLabel("이름:"));
         passengerNameField = new JTextField();
         panel.add(passengerNameField);
 
+        // 학번 입력 필드
         panel.add(new JLabel("학번:"));
         studentIdField = new JTextField();
         panel.add(studentIdField);
 
+        // 입력 폼을 프레임에 추가
         frame.add(panel, BorderLayout.NORTH);
 
+        // 버튼을 포함할 패널 설정
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout());
 
+        // 예약 버튼
         JButton reserveButton = new JButton("예약");
         reserveButton.addActionListener(e -> {
             try {
-                int seatNumber = Integer.parseInt(seatNumberField.getText());
-                String passenger = passengerNameField.getText();
-                String studentId = studentIdField.getText();
-                String time = (String) timeComboBox.getSelectedItem();
-                String route = (String) scheduleComboBox.getSelectedItem();
+                // 사용자 입력 값 받기
+                int seatNumber = Integer.parseInt(seatNumberField.getText());   // 좌석 번호
+                String passenger = passengerNameField.getText();    // 예약자 이름
+                String studentId = studentIdField.getText();     // 예약자 학번
+                String time = (String) timeComboBox.getSelectedItem();  // 선택한 시간
+                String route = (String) scheduleComboBox.getSelectedItem();  // 선택한 노선
+
+                // 이름과 학번이 입력되지 않았으면 경고 메시지 출력
+                if (passenger.isEmpty() || studentId.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "이름과 학번을 모두 입력해주세요.");
+                    return;
+                }
+
+                // 노선과 시간 선택이 유효하면 좌석 예약
                 if (route != null && time != null && !route.isEmpty() && !time.isEmpty()) {
-                    reserveSeat(seatNumber, passenger, route, time, studentId);
+                    reserveSeat(seatNumber, passenger, route, time, studentId); // 좌석 예약
                 } else {
                     JOptionPane.showMessageDialog(null, "노선과 시간을 모두 선택해주세요.");
                 }
@@ -248,29 +327,33 @@ public class ShuttleBusManager {
             }
         });
 
+        // 예약 취소 버튼
         JButton cancelButton = new JButton("예약 취소");
         cancelButton.addActionListener(e -> {
-            String route = (String) scheduleComboBox.getSelectedItem();
-            String time = (String) timeComboBox.getSelectedItem();
+            String route = (String) scheduleComboBox.getSelectedItem(); // 선택한 노선
+            String time = (String) timeComboBox.getSelectedItem();  // 선택한 시간
 
+            // 노선과 시간이 선택된 경우에만 예약 취소 가능
             if (route != null && time != null && !route.isEmpty() && !time.isEmpty()) {
                 JTextField studentIdField = new JTextField();
                 JTextField passengerNameField = new JTextField();
                 Object[] message = {
-                        "학번:", studentIdField,
-                        "이름:", passengerNameField
+                        "학번:", studentIdField,  // 학번 입력 필드
+                        "이름:", passengerNameField   // 이름 입력 필드
                 };
 
+                // 예약 취소 다이얼로그 표시
                 int option = JOptionPane.showConfirmDialog(null, message, "예약 취소",
                         JOptionPane.OK_CANCEL_OPTION,
                         JOptionPane.PLAIN_MESSAGE
                 );
                 if (option == JOptionPane.OK_OPTION) {
-                    String studentId = studentIdField.getText();
-                    String passengerName = passengerNameField.getText();
+                    String studentId = studentIdField.getText();     // 입력된 학번
+                    String passengerName = passengerNameField.getText();    // 입력된 이름
 
+                    // 학번과 이름이 모두 입력되었으면 예약 취소
                     if (!studentId.isEmpty() && !passengerName.isEmpty()) {
-                        cancelReservation(studentId, passengerName, route, time);
+                        cancelReservation(studentId, passengerName, route, time);   // 예약 취소
                     } else {
                         JOptionPane.showMessageDialog(null, "학번과 이름을 모두 입력해주세요.");
                     }
@@ -280,11 +363,11 @@ public class ShuttleBusManager {
             }
         });
 
-
+        // 예약 및 취소 버튼을 버튼 패널에 추가
         buttonPanel.add(reserveButton);
         buttonPanel.add(cancelButton);
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
-        frame.setVisible(true);
+        frame.setVisible(true);  // 프레임 표시
     }
 }
