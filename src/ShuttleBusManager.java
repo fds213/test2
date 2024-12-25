@@ -8,14 +8,14 @@ import java.util.List;
  * 청주대 셔틀버스 좌석 예약 프로그램입니다.
  *
  * @author fds213 (junwon12352@naver.com)
- * @version 2.4
+ * @version 2.5
  * @created 2024-12-17
  * @lastModified 2024-12-25
  * @changelog <ul>
  * <li>2024-12-17: 최초 생성 (fds213)</li>
  * <li>2024-12-23: scanner로 입출력하는 방식에서 gui 버전으로 수정</li>
  * <li>2024-12-24: 시간별 예약 조회기능 추가</li>
- * <li>2024-12-25: 예약 취소 버튼 개선</li>
+ * <li>2024-12-25: 예약 취소 버튼, 남은 좌석표시 개선</li>
  * </ul>
  */
 public class ShuttleBusManager {
@@ -137,6 +137,9 @@ public class ShuttleBusManager {
         Map<Integer, String> seats = reservations.getOrDefault(route, Collections.emptyMap())
                 .getOrDefault(time, Collections.emptyMap());
 
+        int availableSeats = TOTAL_SEATS - seats.size();
+        sb.append("남은 좌석 수: ").append(availableSeats).append(" / ").append(TOTAL_SEATS).append("\n\n");
+
         for (int i = 1; i <= TOTAL_SEATS; i++) {
             if (seats.containsKey(i)) {
                 sb.append("좌석 ").append(i).append(": ").append(seats.get(i)).append("\n");
@@ -145,6 +148,7 @@ public class ShuttleBusManager {
             }
         }
         textArea.setText(sb.toString());
+        textArea.setCaretPosition(0);
     }
 
     public static void updateScheduleDisplay(String route) {
@@ -168,24 +172,6 @@ public class ShuttleBusManager {
         return reservationsForTime;
     }
 
-
-    public static void viewReservationsByTime(String route, String time) {
-        StringBuilder reservationsInfo = new StringBuilder("예약 내역 (" + route + " - " + time + "):\n");
-
-        Map<Integer, String> seats = getReservationsForTime(route, time);
-        if (seats.isEmpty()) {
-            reservationsInfo.append("예약된 좌석이 없습니다.");
-        } else {
-            for (Map.Entry<Integer, String> entry : seats.entrySet()) {
-                reservationsInfo.append("좌석 " + entry.getKey() + ": " + entry.getValue() + "\n");
-            }
-        }
-
-
-        textArea.setText(reservationsInfo.toString());
-    }
-
-
     public static void main(String[] args) {
         loadReservationsFromFile();
 
@@ -207,6 +193,11 @@ public class ShuttleBusManager {
         scheduleComboBox.addActionListener(e -> {
             String selectedRoute = (String) scheduleComboBox.getSelectedItem();
             updateScheduleDisplay(selectedRoute);
+
+            String selectedTime = (String) timeComboBox.getSelectedItem();
+            if (selectedRoute != null && selectedTime != null) {
+                updateReservationsDisplay(selectedRoute, selectedTime);
+            }
         });
         panel.add(scheduleComboBox);
 
@@ -215,8 +206,9 @@ public class ShuttleBusManager {
         timeComboBox.addActionListener(e -> {
             String selectedTime = (String) timeComboBox.getSelectedItem();
             String selectedRoute = (String) scheduleComboBox.getSelectedItem();
-            if (selectedTime != null && selectedRoute != null && !selectedTime.isEmpty() && !selectedRoute.isEmpty()) {
-                viewReservationsByTime(selectedRoute, selectedTime);
+
+            if (selectedRoute != null && selectedTime != null) {
+                updateReservationsDisplay(selectedRoute, selectedTime);
             }
         });
         panel.add(timeComboBox);
@@ -269,7 +261,7 @@ public class ShuttleBusManager {
                         "이름:", passengerNameField
                 };
 
-                int option = JOptionPane.showConfirmDialog(null, message,"예약 취소",
+                int option = JOptionPane.showConfirmDialog(null, message, "예약 취소",
                         JOptionPane.OK_CANCEL_OPTION,
                         JOptionPane.PLAIN_MESSAGE
                 );
