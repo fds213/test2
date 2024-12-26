@@ -1,6 +1,7 @@
 # 청주대학교 셔틀버스 예약 시스템
 
 ## 1. 개요
+![image](https://github.com/user-attachments/assets/38101441-d85b-45b9-8d57-c9ce16b6d870)
 
 ### 1.1. 목적
 - 청주대 학생들의 효율적인 셔틀버스 이용 지원
